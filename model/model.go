@@ -152,7 +152,15 @@ func (m model) View() string {
 		if day == m.focused {
 			style = scaledFocused
 		}
-		cells = append(cells, style.Render(fmt.Sprintf("%d", day)))
+		key := taskKey{month: m.monthNumber, year: m.year, day: day}
+		dayTasks := tasks[key]
+		var cellContent string
+		if len(dayTasks) > 0 {
+			cellContent = fmt.Sprintf("%d\n%d events", day, len(dayTasks))
+		} else {
+			cellContent = fmt.Sprintf("%d", day)
+		}
+		cells = append(cells, style.Render(cellContent))
 		if (firstWeekday+day)%7 == 0 {
 			rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, cells...))
 			cells = nil

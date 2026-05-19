@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/list"
@@ -11,6 +12,16 @@ import (
 )
 
 var models []tea.Model
+
+var (
+	currentTime = time.Now()
+	monthNumber = int(currentTime.Month())
+	year        = int(currentTime.Year())
+)
+
+func getDays() int {
+	return time.Date(year, time.Month(monthNumber)+1, 0, 0, 0, 0, 0, time.Local).Day()
+}
 
 var (
 	purple = lipgloss.Color("135")
@@ -100,6 +111,7 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	numOfDays := getDays()
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if !m.loaded {
@@ -111,11 +123,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		case "l", "right":
-			m.focused = min(m.focused+1, 31)
+			m.focused = min(m.focused+1, numOfDays)
 		case "h", "left":
 			m.focused = max(m.focused-1, 1)
 		case "j", "down":
-			m.focused = min(m.focused+7, 31)
+			m.focused = min(m.focused+7, numOfDays)
 		case "k", "up":
 			m.focused = max(m.focused-7, 1)
 		}
@@ -152,19 +164,25 @@ func (m model) View() string {
 	}
 
 	headers := make([]string, 7)
+	numOfDays := getDays()
 	for i, d := range dayHeaders {
 		headers[i] = headerStyle.Render(d)
 	}
 	rows := []string{lipgloss.JoinHorizontal(lipgloss.Top, headers...)}
 
 	var cells []string
-	for day := 1; day <= 31; day++ {
+	firstWeekday := int(time.Date(year, time.Month(monthNumber), 1, 0, 0, 0, 0, time.Local).Weekday())
+	for i := 0; i < firstWeekday; i++ {
+		cells = append(cells, cellStyle.Render(""))
+	}
+	for day := 1; day <= numOfDays; day++ {
 		style := cellStyle
 		if day == m.focused {
 			style = focusedCellStyle
 		}
 		cells = append(cells, style.Render(fmt.Sprintf("%d", day)))
-		if day%7 == 0 {
+
+		if (firstWeekday+day)%7 == 0 {
 			rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, cells...))
 			cells = nil
 		}
@@ -178,7 +196,9 @@ func (m model) View() string {
 
 	grid := lipgloss.JoinVertical(lipgloss.Left, rows...)
 
-	return lipgloss.JoinHorizontal(lipgloss.Top, grid, "  ", m.renderPanel())
+	gridWTitle := lipgloss.JoinVertical(lipgloss.Left, panelTitleStyle.Render(currentTime.Month().String()), grid)
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, gridWTitle, "  ", m.renderPanel())
 }
 
 func main() {

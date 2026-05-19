@@ -13,13 +13,9 @@ import (
 
 var models []tea.Model
 
-var (
-	currentTime = time.Now()
-	monthNumber = int(currentTime.Month())
-	year        = int(currentTime.Year())
-)
+var currentTime = time.Now()
 
-func getDays() int {
+func getDays(monthNumber, year int) int {
 	return time.Date(year, time.Month(monthNumber)+1, 0, 0, 0, 0, 0, time.Local).Day()
 }
 
@@ -99,30 +95,41 @@ var (
 var dayHeaders = []string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
 
 // mock data
-var tasks = map[int][]string{
-	1:  {"read bittorrent code", "complete math"},
-	3:  {"revise graphs"},
-	7:  {"start truekalender"},
-	15: {"dentist appt", "grocery run", "call mom"},
+type taskKey struct {
+	month int
+	year  int
+	day   int
+}
+
+var tasks = map[taskKey][]string{
+	{month: int(currentTime.Month()), year: int(currentTime.Year()), day: 1}:     {"read bittorrent code", "complete math"},
+	{month: int(currentTime.Month()), year: int(currentTime.Year()), day: 3}:     {"revise graphs"},
+	{month: int(currentTime.Month()), year: int(currentTime.Year()), day: 7}:     {"start truekalender"},
+	{month: int(currentTime.Month()), year: int(currentTime.Year()), day: 15}:    {"dentist appt", "grocery run", "call mom"},
+	{month: int(currentTime.Month()) + 1, year: int(currentTime.Year()), day: 5}: {"next month task"},
 }
 
 type model struct {
-	quitting   bool
-	help       help.Model
-	lists      []list.Model
-	focused    int
-	loaded     bool
-	width      int
-	height     int
-	cellWidth  int
-	cellHeight int
-	panelWidth int
+	quitting    bool
+	help        help.Model
+	lists       []list.Model
+	focused     int
+	loaded      bool
+	width       int
+	height      int
+	cellWidth   int
+	cellHeight  int
+	panelWidth  int
+	monthNumber int
+	year        int
 }
 
 func New() *model {
 	return &model{
-		help:    help.New(),
-		focused: 1,
+		help:        help.New(),
+		focused:     1,
+		monthNumber: int(currentTime.Month()),
+		year:        int(currentTime.Year()),
 	}
 }
 
@@ -135,12 +142,11 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	numOfDays := getDays()
+	numOfDays := getDays(m.monthNumber, m.year)
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-
 		panelWidth := m.width * 28 / 100
 		gridWidth := m.width - panelWidth - 4
 		cellW := gridWidth/7 - 2
@@ -154,11 +160,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.cellWidth = cellW
 		m.cellHeight = cellH
 		m.panelWidth = panelWidth
-
 		if !m.loaded {
 			m.loaded = true
 		}
-
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -172,6 +176,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focused = min(m.focused+7, numOfDays)
 		case "k", "up":
 			m.focused = max(m.focused-7, 1)
+		case "L":
+			m.monthNumber++
+			if m.monthNumber > 12 {
+				m.monthNumber = 1
+				m.year++
+			}
+			m.focused = 1
+		case "H":
+			m.monthNumber--
+			if m.monthNumber < 1 {
+				m.monthNumber = 12
+				m.year--
+			}
+			m.focused = 1
 		}
 	}
 	return m, nil
@@ -180,7 +198,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) renderPanel() string {
 	title := panelTitleStyle.Render(fmt.Sprintf("Day %d", m.focused))
 
-	dayTasks, ok := tasks[m.focused]
+	key := taskKey{month: m.monthNumber, year: m.year, day: m.focused}
+	dayTasks, ok := tasks[key]
 
 	var body string
 	if !ok || len(dayTasks) == 0 {
@@ -228,11 +247,11 @@ func (m model) View() string {
 		headers[i] = scaledHeader.Render(d)
 	}
 
-	numOfDays := getDays()
+	numOfDays := getDays(m.monthNumber, m.year)
 	rows := []string{lipgloss.JoinHorizontal(lipgloss.Top, headers...)}
 
 	var cells []string
-	firstWeekday := int(time.Date(year, time.Month(monthNumber), 1, 0, 0, 0, 0, time.Local).Weekday())
+	firstWeekday := int(time.Date(m.year, time.Month(m.monthNumber), 1, 0, 0, 0, 0, time.Local).Weekday())
 	for i := 0; i < firstWeekday; i++ {
 		cells = append(cells, scaledCell.Render(""))
 	}
@@ -257,12 +276,11 @@ func (m model) View() string {
 	grid := lipgloss.JoinVertical(lipgloss.Left, rows...)
 
 	monthYear := lipgloss.JoinHorizontal(lipgloss.Left,
-		monthTitleStyle.Render(currentTime.Month().String()),
-		yearStyle.Render(fmt.Sprintf("%d", year)),
+		monthTitleStyle.Render(time.Month(m.monthNumber).String()),
+		yearStyle.Render(fmt.Sprintf("%d", m.year)),
 	)
-
 	helpBar := helpBarStyle.Render(
-		"h/← left  •  l/→ right  •  j/↓ week down  •  k/↑ week up  •  q quit",
+		"h/← prev day  •  l/→ next day  •  j/↓ week down  •  k/↑ week up  •  H prev month  •  L next month  •  q quit",
 	)
 
 	gridWTitle := lipgloss.JoinVertical(lipgloss.Left, monthYear, grid)

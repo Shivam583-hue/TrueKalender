@@ -1,6 +1,8 @@
 package model
 
 import (
+	"strings"
+
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -41,22 +43,28 @@ func (f Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			return models[mainModel], nil
 		case "enter":
-			// return models[mainModel], f.createTask
-			return models[mainModel], nil
+			return models[mainModel], f.createTask
 		}
 	}
 	f.title, cmd = f.title.Update(msg)
 	return f, cmd
 }
 
-// func (f Form) createTask() tea.Msg {
-// 	// db.Insert(f.title.Value(), f.focused)
-// 	// return types.Task{
-// 	// 	TaskTitle: f.title.Value(),
-// 	// 	Status:    f.focused,
-// 	// }
-// 	return
-// }
+func (f Form) createTask() tea.Msg {
+	title := strings.TrimSpace(f.title.Value())
+	if title == "" {
+		return nil
+	}
+
+	m, ok := models[mainModel].(model)
+	if !ok {
+		return nil
+	}
+
+	key := taskKey{month: m.monthNumber, year: m.year, day: f.focused}
+	tasks[key] = append(tasks[key], title)
+	return nil
+}
 
 func (f Form) View() string {
 	return lipgloss.JoinVertical(

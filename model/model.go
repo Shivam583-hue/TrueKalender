@@ -75,6 +75,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.loaded {
 			m.loaded = true
 		}
+	// case syncResultMsg:
+	// 	m.statusMsg = string(msg)
+	// 	return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -92,6 +95,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			models[mainModel] = m
 			models[formModel] = NewForm(m.focused)
 			return models[formModel], nil
+		case "s":
+			return m, syncToKanban(m.year, m.monthNumber, m.focused)
+
 		case "L":
 			m.monthNumber++
 			if m.monthNumber > 12 {
@@ -182,7 +188,7 @@ func (m model) View() string {
 		styles.YearStyle.Render(fmt.Sprintf("%d", m.year)),
 	)
 	helpBar := styles.HelpBarStyle.Render(
-		"h/← prev day  •  l/→ next day  •  j/↓ week down  •  k/↑ week up  •  H prev month  •  L next month  •  n new task  •  q quit",
+		"h/← prev day  •  l/→ next day  •  j/↓ week down  •  k/↑ week up  •  H prev month  •  L next month  •  n new task  •  q quit • s sync",
 	)
 
 	gridWTitle := lipgloss.JoinVertical(lipgloss.Left, monthYear, grid)

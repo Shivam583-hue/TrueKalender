@@ -3,9 +3,7 @@
 A terminal-based calendar and task manager built with [Bubble Tea](https://github.com/charmbracelet/bubbletea). Navigate months, track daily tasks, and sync to a kanban board — all from your terminal.
 
 ---
-
-<!-- Add demo GIF here -->
-> **Demo**
+## Demo
 
 ![demo](demo.gif)
 

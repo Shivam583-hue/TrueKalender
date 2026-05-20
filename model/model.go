@@ -89,6 +89,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focused = min(m.focused+7, numOfDays)
 		case "k", "up":
 			m.focused = max(m.focused-7, 1)
+		case "n":
+			models[mainModel] = m
+			models[formModel] = NewForm(m.focused)
+			return models[formModel], nil
 		case "L":
 			m.monthNumber++
 			if m.monthNumber > 12 {

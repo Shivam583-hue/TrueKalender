@@ -5,7 +5,7 @@ A terminal-based calendar and task manager built with [Bubble Tea](https://githu
 ---
 ## Demo
 
-![demo](demo.gif)
+![TrueKalender demo](demo.gif)
 
 ---
 

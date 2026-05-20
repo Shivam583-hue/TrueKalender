@@ -3,6 +3,7 @@ package model
 import (
 	"strings"
 
+	"github.com/Shivam583-hue/TrueKalender/db"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -61,8 +62,10 @@ func (f Form) createTask() tea.Msg {
 		return nil
 	}
 
-	key := taskKey{month: m.monthNumber, year: m.year, day: f.focused}
-	tasks[key] = append(tasks[key], title)
+	if err := db.Insert(title, m.year, m.monthNumber, f.focused); err != nil {
+		return nil
+	}
+
 	return nil
 }
 

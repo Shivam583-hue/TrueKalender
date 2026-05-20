@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Shivam583-hue/TrueKalender/db"
 	"github.com/Shivam583-hue/TrueKalender/styles"
 
 	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -25,7 +25,6 @@ var (
 type model struct {
 	quitting    bool
 	help        help.Model
-	lists       []list.Model
 	focused     int
 	loaded      bool
 	width       int
@@ -156,11 +155,10 @@ func (m model) View() string {
 		if day == m.focused {
 			style = scaledFocused
 		}
-		key := taskKey{month: m.monthNumber, year: m.year, day: day}
-		dayTasks := tasks[key]
 		var cellContent string
-		if len(dayTasks) > 0 {
-			cellContent = fmt.Sprintf("%d\n%d events", day, len(dayTasks))
+		eventCount, err := db.CountByDate(m.year, m.monthNumber, day)
+		if err == nil && eventCount > 0 {
+			cellContent = fmt.Sprintf("%d\n%d events", day, eventCount)
 		} else {
 			cellContent = fmt.Sprintf("%d", day)
 		}
@@ -184,7 +182,7 @@ func (m model) View() string {
 		styles.YearStyle.Render(fmt.Sprintf("%d", m.year)),
 	)
 	helpBar := styles.HelpBarStyle.Render(
-		"h/← prev day  •  l/→ next day  •  j/↓ week down  •  k/↑ week up  •  H prev month  •  L next month  •  q quit",
+		"h/← prev day  •  l/→ next day  •  j/↓ week down  •  k/↑ week up  •  H prev month  •  L next month  •  n new task  •  q quit",
 	)
 
 	gridWTitle := lipgloss.JoinVertical(lipgloss.Left, monthYear, grid)

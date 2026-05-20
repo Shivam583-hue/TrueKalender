@@ -4,11 +4,22 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Shivam583-hue/TrueKalender/db"
 	"github.com/Shivam583-hue/TrueKalender/model"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
+	if err := db.Init(); err != nil {
+		fmt.Printf("failed to initialize db: %v\n", err)
+		os.Exit(1)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			fmt.Printf("failed to close db: %v\n", err)
+		}
+	}()
+
 	mainModel := model.New()
 	models := []tea.Model{mainModel, model.NewForm(0)}
 	model.SetModels(models)
